@@ -293,6 +293,10 @@ function App() {
       }
 
       return true;
+    }).sort((a, b) => {
+      const timeA = (a.timestamp && isValid(a.timestamp)) ? a.timestamp.getTime() : 0;
+      const timeB = (b.timestamp && isValid(b.timestamp)) ? b.timestamp.getTime() : 0;
+      return timeB - timeA;
     });
   }, [leads, filters]);
 
