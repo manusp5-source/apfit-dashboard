@@ -210,7 +210,6 @@ function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [dataSource, setDataSource] = useState<'live' | 'mock' | 'loading'>('loading');
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -248,15 +247,15 @@ function App() {
       if (normalized.length === 0 && dataArray.length > 0) {
         console.warn("Data found but no valid leads after normalization. Falling back to mock.");
         setLeads(generateMockLeads(100));
-        setDataSource('mock');
+
       } else {
         setLeads(normalized.length > 0 ? normalized : generateMockLeads(100));
-        setDataSource(normalized.length > 0 ? 'live' : 'mock');
+
       }
     } catch (e) {
       console.error("Dashboard Fetch Error:", e);
       setLeads(generateMockLeads(100));
-      setDataSource('mock');
+
     } finally {
       setLoading(true); // Keep loading state if needed, or just set last updated
       setLoading(false);
@@ -397,17 +396,12 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
             <StatusBadge uptime={99.8} />
-            <div className="text-right hidden md:block">
-              <div className="text-xs text-gray-400">Origen de Datos</div>
-              <div className={cn("text-sm font-bold", dataSource === 'live' ? "text-accentGreen" : "text-alertRed")}>
-                {dataSource === 'live' ? "DATOS REALES (N8N)" : dataSource === 'mock' ? "MODO DEMO (MOCK)" : "CARGANDO..."}
-              </div>
-            </div>
+            <div className="bg-cardBorder h-8 w-px mx-2 hidden md:block"></div>
             <div className="text-right hidden md:block">
               <div className="text-xs text-gray-400">Última sincro</div>
               <div className="text-sm font-mono text-accentGreen">{format(lastUpdated, 'HH:mm:ss')}</div>
             </div>
-            <button onClick={fetchData} className="p-2 bg-cardBorder rounded-full hover:bg-gray-700 transition">
+            <button onClick={fetchData} className="p-2 bg-cardBorder rounded-full hover:bg-gray-700 transition" title="Refrescar datos">
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
