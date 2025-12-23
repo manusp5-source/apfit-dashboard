@@ -210,6 +210,7 @@ function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [dataSource, setDataSource] = useState<'live' | 'mock' | 'loading'>('loading');
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
@@ -226,21 +227,38 @@ function App() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log("Fetching data from n8n...");
       const res = await fetch('https://n8n.manusp.site/webhook/64dbf343-08e3-4a0b-8c8f-cd87c1554115');
-      if (!res.ok) throw new Error('API Failed');
+      if (!res.ok) throw new Error(`API Failed with status: ${res.status}`);
       const json = await res.json();
+      console.log("Fetched raw data count:", Array.isArray(json) ? json.length : "Single Object");
 
-      // Normalize
-      const normalized: Lead[] = json.map((item: any) => ({
-        ...item,
-        timestamp: parseISO(item.timestamp), // Ensure date object
-        fechaCita: item.fechaCita ? parseISO(item.fechaCita) : null,
-      }));
-      setLeads(Array.isArray(normalized) ? normalized : generateMockLeads(100));
+      // Normalize - filter out anything that doesn't look like a lead (e.g. the Count object)
+      const dataArray = Array.isArray(json) ? json : (json.data || []);
+      const normalized: Lead[] = dataArray
+        .filter((item: any) => item && item.timestamp && item.timestamp !== "")
+        .map((item: any) => ({
+          ...item,
+          timestamp: parseISO(item.timestamp), // Ensure date object
+          fechaCita: item.fechaCita && item.fechaCita !== "" ? parseISO(item.fechaCita) : null,
+        }));
+
+      console.log("Normalized leads count:", normalized.length);
+
+      if (normalized.length === 0 && dataArray.length > 0) {
+        console.warn("Data found but no valid leads after normalization. Falling back to mock.");
+        setLeads(generateMockLeads(100));
+        setDataSource('mock');
+      } else {
+        setLeads(normalized.length > 0 ? normalized : generateMockLeads(100));
+        setDataSource(normalized.length > 0 ? 'live' : 'mock');
+      }
     } catch (e) {
-      console.error("Using Mock Data due to fetch error:", e);
+      console.error("Dashboard Fetch Error:", e);
       setLeads(generateMockLeads(100));
+      setDataSource('mock');
     } finally {
+      setLoading(true); // Keep loading state if needed, or just set last updated
       setLoading(false);
       setLastUpdated(new Date());
     }
@@ -375,6 +393,12 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
             <StatusBadge uptime={99.8} />
+            <div className="text-right hidden md:block">
+              <div className="text-xs text-gray-400">Origen de Datos</div>
+              <div className={cn("text-sm font-bold", dataSource === 'live' ? "text-accentGreen" : "text-alertRed")}>
+                {dataSource === 'live' ? "DATOS REALES (N8N)" : dataSource === 'mock' ? "MODO DEMO (MOCK)" : "CARGANDO..."}
+              </div>
+            </div>
             <div className="text-right hidden md:block">
               <div className="text-xs text-gray-400">Última sincro</div>
               <div className="text-sm font-mono text-accentGreen">{format(lastUpdated, 'HH:mm:ss')}</div>
