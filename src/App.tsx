@@ -213,7 +213,7 @@ function App() {
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
-    dateRange: { start: subDays(new Date(), 30), end: new Date() },
+    dateRange: { start: subDays(new Date(), 90), end: new Date() },
     canal: 'Todos',
     scoring: 'Todos',
     estado: 'Todos',
@@ -470,7 +470,7 @@ function App() {
           <KpiCard
             title="Leads Totales"
             value={kpis.total}
-            subtext="Últimos 30 días"
+            subtext="Últimos 90 días"
             icon={Users}
             trend={12}
           />
